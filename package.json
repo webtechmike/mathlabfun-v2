@@ -2,6 +2,10 @@
     "name": "mathlabfun-v2",
     "version": "0.1.0",
     "private": true,
+    "packageManager": "pnpm@10.18.0",
+    "engines": {
+        "node": ">=22.x"
+    },
     "scripts": {
         "dev": "next dev",
         "build": "next build",
