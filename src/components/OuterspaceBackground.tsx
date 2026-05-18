@@ -1,12 +1,12 @@
 /**
- * Outerspace backdrop. A single 1px dot with many box-shadows is the
- * classic, render-reliable way to paint a star field — radial-gradient
- * stars at <2px tend to vanish into sub-pixel anti-aliasing.
+ * Outerspace backdrop. A single 1px dot multiplied with many box-shadows is
+ * the standard render-reliable starfield technique — but only if each
+ * shadow has nonzero spread. With spread:0 a 1px shadow at a fractional
+ * vw/vh position gets anti-aliased across several sub-pixels and disappears.
  *
- * Star positions are generated from a fixed seed so server and client
- * markup always match.
+ * Star positions come from a seeded PRNG so SSR and CSR output match.
  */
-const STARS = buildStarShadows({ count: 120, seed: 1337 });
+const STARS = buildStarShadows({ count: 140, seed: 1337 });
 
 export function OuterspaceBackground() {
     return (
@@ -29,8 +29,6 @@ function buildStarShadows({
     count: number;
     seed: number;
 }): string {
-    // Mulberry32: small deterministic PRNG. Same seed → identical output
-    // on server and client, so React doesn't complain about hydration.
     let state = seed >>> 0;
     const rand = () => {
         state = (state + 0x6d2b79f5) >>> 0;
@@ -44,12 +42,23 @@ function buildStarShadows({
     for (let i = 0; i < count; i++) {
         const x = (rand() * 100).toFixed(2);
         const y = (rand() * 100).toFixed(2);
-        const alpha = (0.35 + rand() * 0.55).toFixed(2);
-        // ~5% of stars get a slight glow to add depth.
-        const glow = rand() < 0.05 ? "4px" : "0";
+        const tier = rand();
+        const alpha = (0.55 + rand() * 0.45).toFixed(2);
+
+        // Three star sizes for depth. Spread is what makes them visible.
+        let spread: string;
+        let blur = "0";
+        if (tier < 0.7) {
+            spread = "0.5px"; // small: ~2px star
+        } else if (tier < 0.95) {
+            spread = "1px"; // medium: ~3px star
+        } else {
+            spread = "1.5px"; // hero: ~4px star with halo
+            blur = "6px";
+        }
+
         shadows.push(
-            `${x}vw ${y}vh 0 0 rgba(255,255,255,${alpha})`,
-            `${x}vw ${y}vh ${glow} 0 rgba(255,255,255,${alpha})`
+            `${x}vw ${y}vh ${blur} ${spread} rgba(255,255,255,${alpha})`
         );
     }
     return shadows.join(", ");
