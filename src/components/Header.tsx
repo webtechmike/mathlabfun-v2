@@ -1,13 +1,10 @@
 import Link from "next/link";
-import {
-    faUserAstronaut,
-    faUserSecret,
-} from "@fortawesome/free-solid-svg-icons";
+import { faUserSecret } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/supabase/profile";
 import { SpacebucksIcon } from "./SpacebucksIcon";
-import { signOut } from "@/app/login/actions";
+import { UserMenu } from "./UserMenu";
 
 export async function Header() {
     let spacebucks = 0;
@@ -37,15 +34,7 @@ export async function Header() {
                             {spacebucks}
                         </span>
                     </div>
-                    <form action={signOut}>
-                        <button
-                            type="submit"
-                            className="hover:text-spacebucks transition"
-                            aria-label="Sign out"
-                        >
-                            <FontAwesomeIcon icon={faUserAstronaut} size="2x" />
-                        </button>
-                    </form>
+                    <UserMenu />
                 </>
             ) : (
                 <Link

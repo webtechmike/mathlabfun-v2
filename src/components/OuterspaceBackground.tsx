@@ -1,7 +1,13 @@
 /**
- * Outerspace backdrop. Replaces v1's SCSS-generated star field with a single
- * fixed element painted with several radial-gradients. Cheap and crisp.
+ * Outerspace backdrop. A single 1px dot with many box-shadows is the
+ * classic, render-reliable way to paint a star field — radial-gradient
+ * stars at <2px tend to vanish into sub-pixel anti-aliasing.
+ *
+ * Star positions are generated from a fixed seed so server and client
+ * markup always match.
  */
+const STARS = buildStarShadows({ count: 120, seed: 1337 });
+
 export function OuterspaceBackground() {
     return (
         <div
@@ -9,22 +15,42 @@ export function OuterspaceBackground() {
             className="bg-space-900 pointer-events-none fixed inset-0 -z-10 overflow-hidden"
         >
             <div
-                className="absolute inset-[-50%] animate-[spin_500s_linear_infinite]"
-                style={{
-                    backgroundImage: [
-                        "radial-gradient(1px 1px at 5% 12%, rgba(255,255,255,0.85), transparent 60%)",
-                        "radial-gradient(1px 1px at 22% 78%, rgba(255,255,255,0.6), transparent 60%)",
-                        "radial-gradient(1.5px 1.5px at 38% 30%, rgba(255,255,255,0.7), transparent 60%)",
-                        "radial-gradient(1px 1px at 55% 60%, rgba(255,255,255,0.5), transparent 60%)",
-                        "radial-gradient(1px 1px at 70% 18%, rgba(255,255,255,0.7), transparent 60%)",
-                        "radial-gradient(1.5px 1.5px at 82% 84%, rgba(255,255,255,0.6), transparent 60%)",
-                        "radial-gradient(1px 1px at 12% 92%, rgba(255,255,255,0.5), transparent 60%)",
-                        "radial-gradient(1px 1px at 88% 42%, rgba(255,255,255,0.6), transparent 60%)",
-                        "radial-gradient(1.2px 1.2px at 47% 88%, rgba(255,255,255,0.7), transparent 60%)",
-                        "radial-gradient(1px 1px at 65% 8%, rgba(255,255,255,0.6), transparent 60%)",
-                    ].join(","),
-                }}
+                className="absolute top-0 left-0 h-px w-px rounded-full bg-white"
+                style={{ boxShadow: STARS }}
             />
         </div>
     );
+}
+
+function buildStarShadows({
+    count,
+    seed,
+}: {
+    count: number;
+    seed: number;
+}): string {
+    // Mulberry32: small deterministic PRNG. Same seed → identical output
+    // on server and client, so React doesn't complain about hydration.
+    let state = seed >>> 0;
+    const rand = () => {
+        state = (state + 0x6d2b79f5) >>> 0;
+        let t = state;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+
+    const shadows: string[] = [];
+    for (let i = 0; i < count; i++) {
+        const x = (rand() * 100).toFixed(2);
+        const y = (rand() * 100).toFixed(2);
+        const alpha = (0.35 + rand() * 0.55).toFixed(2);
+        // ~5% of stars get a slight glow to add depth.
+        const glow = rand() < 0.05 ? "4px" : "0";
+        shadows.push(
+            `${x}vw ${y}vh 0 0 rgba(255,255,255,${alpha})`,
+            `${x}vw ${y}vh ${glow} 0 rgba(255,255,255,${alpha})`
+        );
+    }
+    return shadows.join(", ");
 }
