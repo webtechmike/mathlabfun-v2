@@ -1,8 +1,10 @@
 import type { GameModule } from "./types";
 import mathAttack from "./math-attack";
+import tapAttack from "./tap-attack";
 
 const games = {
     [mathAttack.meta.slug]: mathAttack,
+    [tapAttack.meta.slug]: tapAttack,
 } satisfies Record<string, GameModule>;
 
 export type GameSlug = keyof typeof games;

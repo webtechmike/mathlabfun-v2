@@ -13,4 +13,3 @@ const mathAttack: GameModule = {
 };
 
 export default mathAttack;
-export * from "./rules";

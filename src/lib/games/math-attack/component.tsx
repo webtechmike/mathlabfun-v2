@@ -9,7 +9,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { Spaceship } from "@/components/Spaceship";
 import { cn } from "@/lib/utils";
-import { calculateReward, generateQuestion, questionKey } from "./rules";
+import { generateQuestion, questionKey } from "../shared/question";
+import { calculateReward } from "../shared/reward";
 import type { GameComponentProps, Question } from "../types";
 
 const ROUND_SECONDS = 30;

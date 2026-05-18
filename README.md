@@ -1,8 +1,7 @@
 # mathlabfun v2
 
 Math drills with daily streaks, super streaks, and a spacebucks economy. v2 is
-a clean rewrite of the original [mathlabfun](https://github.com/) on a modern
-stack:
+a clean rewrite of the original mathlabfun on a modern stack:
 
 - Next.js 16 (App Router) + React 19 + TypeScript 5
 - Tailwind CSS 4 with an `outerspace` theme baked into `@theme` tokens
@@ -10,7 +9,10 @@ stack:
 - Zustand + TanStack Query for client state and server cache
 - Vitest + Testing Library
 - Husky + lint-staged + Prettier
-- Deploys to Vercel
+- Deployed to Vercel at [mathlab.fun](https://mathlab.fun)
+
+See [`ROADMAP.md`](./ROADMAP.md) for what's next, architectural decisions, and
+design space for upcoming features (level progression, paid tier, etc.).
 
 ## Getting started
 
@@ -46,38 +48,68 @@ Optional:
 
 ```
 src/
-  app/                          # Next.js App Router
-    layout.tsx                  # outerspace shell, header
-    page.tsx                    # home + game list
-    login/                      # email auth (server actions)
-    auth/callback/route.ts      # Supabase OAuth callback
-    games/[slug]/page.tsx       # registry-driven game route
-  components/                   # React components (server + client)
+  app/                              # Next.js App Router
+    layout.tsx                      # outerspace shell, header, isolated stacking
+    page.tsx                        # home + game list
+    login/                          # email auth (server actions)
+    auth/callback/route.ts          # Supabase OAuth callback
+    games/[slug]/page.tsx           # registry-driven game route
+  components/
+    Header.tsx                      # server component, fetches profile
+    UserMenu.tsx                    # client dropdown for sign-out
+    OuterspaceBackground.tsx        # seeded star field
+    Spaceship.tsx                   # pure CSS spaceship
+    SpacebucksIcon.tsx              # icon with rewards tooltip
   lib/
     games/
-      types.ts                  # shared game types
-      registry.ts               # slug → GameModule lookup
+      types.ts                      # shared game types
+      registry.ts                   # slug → GameModule lookup
+      shared/
+        question.ts                 # generateQuestion, pickOperation, etc.
+        question.test.ts
+        reward.ts                   # canonical calculateReward
+        reward.test.ts
       math-attack/
-        rules.ts                # pure logic: question, hint, reward
-        rules.test.ts           # Vitest unit tests
-        component.tsx           # game UI
-        index.ts                # GameModule export
-    supabase/                   # browser + server clients, profile helpers
+        component.tsx               # typed-input game UI
+        index.ts                    # GameModule export
+      tap-attack/
+        rules.ts                    # generateChoices + halved reward
+        rules.test.ts
+        component.tsx               # multiple-choice game UI
+        index.ts
+    supabase/                       # browser + server clients, profile helpers
     utils.ts
-  proxy.ts                      # Next 16 proxy: refresh Supabase session per request
+  proxy.ts                          # Next 16 proxy: refresh Supabase session
 supabase/
-  migrations/                   # SQL run against your Supabase project
+  migrations/                       # SQL run against your Supabase project
 ```
+
+## Games
+
+Two games are live:
+
+| Slug          | Title       | Input               | Reward ratio | Notes                                                          |
+| ------------- | ----------- | ------------------- | ------------ | -------------------------------------------------------------- |
+| `math-attack` | Math Attack | typed number        | 1×           | Tests recall. Has hint button.                                 |
+| `tap-attack`  | Tap Attack  | multiple-choice tap | 0.5×         | Mobile-friendly. 3 choices for L1–L3, 4 for L4+. Auto-advance. |
+
+The Tap Attack reward is computed as `Math.max(1, Math.floor(canonical / 2))`,
+so the two games stay in lockstep automatically if the canonical economy
+changes.
 
 ## Adding a new game
 
 1. Create `src/lib/games/<slug>/`:
-    - `rules.ts` (pure functions)
-    - `rules.test.ts` (Vitest)
     - `component.tsx` (`"use client"`, accepts `GameComponentProps`)
     - `index.ts` exporting `{ meta, Component }: GameModule`
-2. Register it in `src/lib/games/registry.ts`.
-3. It's now reachable at `/games/<slug>`.
+    - Game-specific `rules.ts` + `rules.test.ts` if the game has its own
+      mechanics (e.g. distractor generation, custom reward scaling)
+2. Reuse `src/lib/games/shared/`:
+    - `question.ts` for question generation and operator helpers
+    - `reward.ts` for the canonical spacebucks calculation (wrap it if your
+      game has different economics)
+3. Register the module in `src/lib/games/registry.ts`.
+4. It's now reachable at `/games/<slug>` and rendered as a card on `/`.
 
 ## Scripts
 
@@ -93,16 +125,50 @@ pnpm typecheck      # tsc --noEmit
 pnpm format         # prettier --write .
 ```
 
-## Deploying
+## Deploying to Vercel
 
-This is a Next.js 16 + Supabase app — Vercel is the path of least resistance.
+This is a Next.js 16 + Supabase app — Vercel is the supported deploy target
+and the host for [mathlab.fun](https://mathlab.fun).
 
 1. Push the repo to GitHub.
 2. **Import** it on [vercel.com](https://vercel.com).
-3. Add the same env vars from `.env.local` in the Vercel project settings.
-4. Add your production URL to the Supabase allowed redirect list.
+3. In **Project Settings → Build and Deployment**:
+    - Framework Preset = **Next.js**
+    - Root Directory = blank
+    - Install/Build/Output command overrides = **off**
+    - Node.js Version = **22.x**
+4. Add env vars from `.env.local` to **Production, Preview, and Development**
+   scopes.
+5. Add your production URL to the Supabase **Authentication → URL Configuration**
+   allowed redirect list, and set the Site URL to it.
 
-Cloudflare Pages and Netlify both work but offer no advantage here.
+### Pinning the toolchain
+
+To prevent "fails almost instantly" deploys caused by pnpm version drift
+between local and CI:
+
+```json
+// package.json
+{
+    "packageManager": "pnpm@10.18.0",
+    "engines": { "node": "22.x" }
+}
+```
+
+The `pnpm-workspace.yaml` uses `ignoredBuiltDependencies`, which is a pnpm
+v10+ field. Without pinning, Vercel may pick pnpm 9 and the install step dies
+before producing any meaningful log output.
+
+### DNS migration notes (one-time)
+
+The domain was migrated from Netlify (v1) to Vercel (v2). The records that
+work:
+
+- Apex `mathlab.fun` → `A` to `76.76.21.21`
+- `www.mathlab.fun` → `CNAME` to `cname.vercel-dns.com`
+
+Removed from Netlify: the custom-domain claim. The v1 site is archived but
+not reachable from `mathlab.fun`.
 
 ## Migration notes from v1
 
@@ -110,11 +176,11 @@ What was kept (in spirit, not in code):
 
 - Math Attack's reward rules — base by operation, negative-result bonus, level
   bonus, super streak doubling — ported to a pure function in
-  `src/lib/games/math-attack/rules.ts` and unit-tested.
+  `src/lib/games/shared/reward.ts` and unit-tested.
 - The user/profile data model: daily streak, super streak, score streak, best
   score streak, totals, spacebucks. Now lives in `public.profiles` with RLS.
 - The outerspace visual language. SCSS-generated stars are replaced by a
-  single fixed background with stacked radial gradients.
+  single box-shadow-scattered star field.
 
 What was dropped:
 

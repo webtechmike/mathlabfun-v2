@@ -1,13 +1,13 @@
 import type { Operation, Operator, Question } from "../types";
 
-const OPERATORS: Record<Operation, Operator> = {
+export const OPERATORS: Record<Operation, Operator> = {
     addition: { symbol: "+", label: "addition" },
     subtraction: { symbol: "-", label: "subtraction" },
     multiplication: { symbol: "x", label: "multiplication" },
     division: { symbol: "÷", label: "division" },
 };
 
-function compute(op: Operation, a: number, b: number): number {
+export function compute(op: Operation, a: number, b: number): number {
     switch (op) {
         case "addition":
             return a + b;
@@ -99,54 +99,4 @@ export function generateQuestion(
     );
 
     return question;
-}
-
-export interface CalculateRewardInput {
-    operation: Operation;
-    /** Daily streak ≥ 3 doubles rewards. */
-    isSuperStreakActive: boolean;
-    /** The full question; used for the negative-result bonus. */
-    question?: Pick<Question, "input1" | "input2" | "operator">;
-    /** Game level. Adds Math.floor(level / 2) to the base reward. */
-    level?: number;
-}
-
-const BASE_BY_OPERATION: Record<Operation, number> = {
-    addition: 1,
-    subtraction: 2,
-    multiplication: 3,
-    division: 3,
-};
-
-/**
- * Pure reward calculator. Same rules as v1's Game4.tsx, extracted so it can be
- * unit-tested and reused without React.
- */
-export function calculateReward({
-    operation,
-    isSuperStreakActive,
-    question,
-    level = 1,
-}: CalculateRewardInput): number {
-    let reward = BASE_BY_OPERATION[operation] ?? 1;
-
-    if (question) {
-        const result = compute(
-            question.operator.label,
-            question.input1,
-            question.input2
-        );
-        if (result < 0) {
-            reward += 1;
-        }
-    }
-
-    const levelBonus = Math.floor(level / 2);
-    reward += levelBonus;
-
-    if (isSuperStreakActive) {
-        reward *= 2;
-    }
-
-    return reward;
 }
