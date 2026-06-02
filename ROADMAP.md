@@ -95,7 +95,12 @@ Profile already has `daily_streak` and `super_streak` columns. Needed:
   below).
 - Sign-out button (already in the user menu, but also live here).
 
-### 4. Level progression — see [Design: Level progression](#design-level-progression)
+### 4. Level progression — PARTIALLY SHIPPED — see [Design: Level progression](#design-level-progression)
+
+**Shipped (Jun 2026):** a 12-level curriculum in `src/lib/games/shared/levels.ts`
+(gentle pre-K bottom, per-level timers), in-game progression, and parent-facing
+level selector + lock in Tap Attack. The remaining piece is **persistence** —
+level + lock state reset on refresh (blocked on #1).
 
 ### 5. Age and parent fields at signup — see [Design: Age & parent linking](#design-age--parent-linking)
 
@@ -123,6 +128,31 @@ Each new game costs roughly: 1 component + 1 rules file (if novel mechanics)
 
 - 1 test + 1 registry line.
 
+### Tap Attack — open follow-ups (noted Jun 2026)
+
+Playtesting with a 4-year-old surfaced these. None are blocking; pick up next
+session.
+
+- **Upper addition/subtraction may still be too hard.** Levels 6–7 introduce
+  two-digit and negative numbers (e.g. `−47 + 88`), which can be a wall for a
+  young learner even though the answer is in range. Idea: split the jump —
+  keep two-digit positives for a level or two before introducing negatives,
+  and/or cap operand magnitude separately from answer range (add an
+  `maxOperand` to `LevelSpec` so we can keep answers ±100 while keeping the
+  _displayed numbers_ smaller). Needs product thought on the exact ramp before
+  implementing.
+- **Hints are missing in Tap Attack.** Math Attack has a hint button
+  (`generateHint` / `question.hint` exists and is populated), but Tap Attack
+  never surfaces it. Options: a "?" button that highlights/eliminates one wrong
+  choice (50/50 lifeline), or shows the range hint text. Eliminating a
+  distractor is the more tap-friendly version. Decide whether hints cost
+  something (e.g. reduced reward for that question) like Math Attack's flow.
+- **Spacing between gameplay and stats.** The progress bar / stat block sits
+  too close to the play area. Add vertical breathing room — likely a larger
+  gap (or a divider) between the spaceship and the progress bar, or group the
+  "info" (level/streak/spacebucks/progress) and "play" (problem/choices) into
+  two visually distinct zones. Pure layout tweak in `tap-attack/component.tsx`.
+
 ### Lower-priority but worth tracking
 
 - **Persist `level` per game per user.** Currently `?level=4` works but is
@@ -145,13 +175,56 @@ Each new game costs roughly: 1 component + 1 rules file (if novel mechanics)
 The product question: **how does a player advance, and what changes when they
 do?**
 
-### Current state
+### Current state (updated Jun 2026)
 
 - `GameComponentProps` exposes a `level: number` prop.
-- Math Attack uses it only for the `+Math.floor(level/2)` reward bonus.
-- Tap Attack additionally uses it to pick 3 vs 4 choices.
-- Levels are set by URL query string (`?level=4`). There's no UI to change
-  level and no persistence.
+- **A 10-level curriculum lives in `src/lib/games/shared/levels.ts`** as an
+  array of `LevelSpec` (operations + answer range + choice count per level).
+  `generateLeveledQuestion(level, …)` produces questions that satisfy the
+  spec, with integer answers guaranteed in range. Division (level 10) always
+  yields clean integer quotients (no remainders).
+- **Tap Attack has working in-game progression:** advance one level after
+  `CORRECT_TO_ADVANCE` (5) correct answers at the current level, up to level 10. Wrong answers and timeouts never demote — they only reset the reward
+  streak. A progress bar + level chip + "Level up!" banner surface it.
+- Math Attack still only uses `level` for the `+Math.floor(level/2)` reward
+  bonus. It can adopt `generateLeveledQuestion` later (the helper lives in
+  `shared/` precisely so it can).
+- **Gentle bottom for young learners:** levels 1–5 are addition only, starting
+  at sums-to-5 with small operands; levels 1–4 use long (45–60s) timers and a
+  forgiving timeout (no streak reset), so a 4-year-old can take their time.
+- **Parent controls (in-game, no persistence needed):** a level `<select>`
+  jumps to any level, and a **Lock** toggle pins the child to the current
+  level (disables auto-advance). Stopgap for age/level-cap work until signup
+  collects an age.
+- `?level=N` is now the **starting** level; progression / the picker take over
+  in-session.
+- **Still missing: persistence.** Level + lock state reset on refresh (blocked
+  on #1). When `game_progress` lands, seed `initialLevel` from it and write the
+  new level on each level-up / picker change.
+
+### Curriculum (shipped)
+
+Per-level `roundSeconds` and `forgivingTimeout` (no streak reset on timeout)
+keep the early levels stress-free.
+
+| Lvl | Operations              | Answer range | Choices | Timer | Forgiving |
+| --- | ----------------------- | ------------ | ------- | ----- | --------- |
+| 1   | addition                | 0–5          | 3       | 60s   | yes       |
+| 2   | addition                | 0–10         | 3       | 60s   | yes       |
+| 3   | addition                | 0–20         | 3       | 50s   | yes       |
+| 4   | addition                | 0–50         | 3       | 45s   | yes       |
+| 5   | addition                | 0–99         | 3       | 40s   | no        |
+| 6   | addition                | −100–100     | 3       | 40s   | no        |
+| 7   | add, subtract           | −100–100     | 3       | 35s   | no        |
+| 8   | multiply                | 0–50         | 4       | 35s   | no        |
+| 9   | multiply                | 0–100        | 4       | 30s   | no        |
+| 10  | multiply                | −100–100     | 4       | 30s   | no        |
+| 11  | add, subtract, multiply | −100–100     | 4       | 25s   | no        |
+| 12  | + intro division        | −100–100     | 4       | 25s   | no        |
+
+To retune: edit `LEVELS` in `levels.ts` (ranges, timers, forgiveness). To
+change the advance threshold or make wrong answers demote, edit
+`CORRECT_TO_ADVANCE` and `onChoose` in `tap-attack/component.tsx`.
 
 ### Open design questions
 

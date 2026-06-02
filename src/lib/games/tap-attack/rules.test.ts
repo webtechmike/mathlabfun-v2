@@ -9,10 +9,15 @@ import type { Question } from "../types";
 const q = (
     input1: number,
     input2: number,
-    op: "addition" | "subtraction" | "multiplication",
+    op: "addition" | "subtraction" | "multiplication" | "division",
     answer: number
 ): Question => {
-    const symbol = { addition: "+", subtraction: "-", multiplication: "x" }[op];
+    const symbol = {
+        addition: "+",
+        subtraction: "-",
+        multiplication: "x",
+        division: "÷",
+    }[op];
     return {
         input1,
         input2,
@@ -32,9 +37,15 @@ describe("choiceCountForLevel", () => {
         [1, 3],
         [2, 3],
         [3, 3],
-        [4, 4],
-        [5, 4],
+        [4, 3],
+        [5, 3],
+        [6, 3],
+        [7, 3],
+        [8, 4],
+        [9, 4],
         [10, 4],
+        [11, 4],
+        [12, 4],
     ] as const)("level %i → %i choices", (level, expected) => {
         expect(choiceCountForLevel(level)).toBe(expected);
     });
@@ -108,6 +119,42 @@ describe("generateChoices", () => {
         expect(choices).toHaveLength(4);
         expect(new Set(choices).size).toBe(4);
         expect(choices).toContain(0);
+    });
+
+    test("division uses near-misses and divisor/dividend confusion, not a×b", () => {
+        const question = q(56, 8, "division", 7); // 56 ÷ 8 = 7
+        const pool = new Set<number>();
+        for (let i = 0; i < 40; i++) {
+            const choices = generateChoices({
+                question,
+                count: 4,
+                rng: seqRng([i / 40, (i + 11) / 40, (i + 23) / 40]),
+            });
+            for (const c of choices) pool.add(c);
+        }
+        expect(pool.has(7)).toBe(true); // answer
+        expect(pool.has(8)).toBe(true); // divisor confusion
+        expect(pool.has(56)).toBe(true); // dividend confusion
+        // The absurd confused-operation distractor (56 × 8 = 448) must never
+        // appear for division.
+        expect(pool.has(448)).toBe(false);
+    });
+
+    test("keeps distractors within the answer range when provided", () => {
+        const question = q(1, 1, "addition", 2);
+        for (let i = 0; i < 200; i++) {
+            const choices = generateChoices({
+                question,
+                count: 3,
+                minAnswer: 0,
+                maxAnswer: 9,
+            });
+            expect(choices).toHaveLength(3);
+            for (const c of choices) {
+                expect(c).toBeGreaterThanOrEqual(0);
+                expect(c).toBeLessThanOrEqual(9);
+            }
+        }
     });
 });
 

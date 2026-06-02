@@ -88,14 +88,34 @@ supabase/
 
 Two games are live:
 
-| Slug          | Title       | Input               | Reward ratio | Notes                                                          |
-| ------------- | ----------- | ------------------- | ------------ | -------------------------------------------------------------- |
-| `math-attack` | Math Attack | typed number        | 1×           | Tests recall. Has hint button.                                 |
-| `tap-attack`  | Tap Attack  | multiple-choice tap | 0.5×         | Mobile-friendly. 3 choices for L1–L3, 4 for L4+. Auto-advance. |
+| Slug          | Title       | Input               | Reward ratio | Notes                                                                    |
+| ------------- | ----------- | ------------------- | ------------ | ------------------------------------------------------------------------ |
+| `math-attack` | Math Attack | typed number        | 1×           | Tests recall. Has hint button.                                           |
+| `tap-attack`  | Tap Attack  | multiple-choice tap | 0.5×         | Mobile-friendly. 10-level curriculum, auto-advance, in-game progression. |
 
 The Tap Attack reward is computed as `Math.max(1, Math.floor(canonical / 2))`,
 so the two games stay in lockstep automatically if the canonical economy
 changes.
+
+### Level curriculum
+
+Tap Attack uses a 12-level curriculum defined in
+`src/lib/games/shared/levels.ts`. The bottom of the ramp is deliberately tiny
+(sums to 5, then 10, then 20…) so a pre-K learner can succeed, then difficulty
+grows by widening the answer range, introducing negatives, and layering
+operations — addition only (L1–6) → subtraction (L7) → multiplication (L8–10)
+→ mixed (L11) → intro division (L12). Choices step from 3 (L1–7) to 4 (L8–12).
+
+Each level also carries its own `roundSeconds` (60s at the bottom, tightening
+to 25s at the top) and a `forgivingTimeout` flag — on the easiest levels
+(1–4) a timeout does **not** reset the reward streak, so a young child can
+take their time.
+
+Players advance one level per 10 correct answers; wrong answers and timeouts
+never demote. A parent can also use the in-game **level selector** to jump to
+any level and the **Lock** toggle to pin a child to one level (disables
+auto-advance). Progression is in-session only until per-user persistence lands
+(see `ROADMAP.md`).
 
 ## Adding a new game
 
