@@ -115,6 +115,14 @@ export function TapAttack({ level }: GameComponentProps) {
 
     return (
         <div className="relative mx-auto flex w-full max-w-2xl flex-col items-center gap-8 px-4 py-8">
+            <div className="flex items-center gap-2">
+                <FontAwesomeIcon icon={faClock} />
+                <span
+                    className={cn("text-2xl font-bold tabular-nums", timerTone)}
+                >
+                    {timeLeft}s
+                </span>
+            </div>
             <div className="bg-space-800/60 ring-streak/20 flex w-full items-center justify-between rounded-2xl px-4 py-3 ring-1 backdrop-blur">
                 <div className="flex items-center gap-2">
                     <FontAwesomeIcon
@@ -129,17 +137,7 @@ export function TapAttack({ level }: GameComponentProps) {
                         Best {bestStreak}
                     </span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <FontAwesomeIcon icon={faClock} />
-                    <span
-                        className={cn(
-                            "text-2xl font-bold tabular-nums",
-                            timerTone
-                        )}
-                    >
-                        {timeLeft}s
-                    </span>
-                </div>
+
                 <div className="text-sm opacity-80">
                     Spacebucks{" "}
                     <span className="text-spacebucks font-semibold">
