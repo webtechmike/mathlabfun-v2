@@ -21,11 +21,72 @@ export function compute(op: Operation, a: number, b: number): number {
 }
 
 /**
- * Build the hint string for a target answer. The hint nudges the player toward
- * a 10-wide range, except when the answer is a multiple of 10 (then we widen
- * to ±5 around the answer).
+ * A division "number bond": split `dividend ÷ divisor` into two friendlier
+ * divisions whose quotients add up to the answer.
+ *
+ *   91 ÷ 7  →  (70 ÷ 7 = 10)  and  (21 ÷ 7 = 3)  →  10 + 3 = 13
  */
-export function generateHint(answer: number): string {
+export interface NumberBond {
+    dividend: number;
+    divisor: number;
+    /** Largest round-tens multiple of the divisor at or below the dividend. */
+    part1: number;
+    /** The leftover, `dividend - part1`. */
+    part2: number;
+    quotient1: number;
+    quotient2: number;
+}
+
+/**
+ * Decompose `dividend ÷ divisor` into a number bond. We peel off the largest
+ * round-tens multiple of the divisor (e.g. 70 out of 91 for ÷7), leaving an
+ * easy remainder (21) — both halves are exact divisions.
+ *
+ * Returns `null` when no useful split exists: a non-exact division, a small
+ * dividend whose tens-part would be 0 (the quotient is single-digit), or an
+ * exact tens multiple with no remainder. Callers fall back to the range hint.
+ */
+export function buildNumberBond(
+    dividend: number,
+    divisor: number
+): NumberBond | null {
+    if (divisor <= 0 || dividend <= 0) return null;
+    if (dividend % divisor !== 0) return null;
+    const part1 = Math.floor(dividend / divisor / 10) * 10 * divisor;
+    if (part1 === 0 || part1 === dividend) return null;
+    const part2 = dividend - part1;
+    return {
+        dividend,
+        divisor,
+        part1,
+        part2,
+        quotient1: part1 / divisor,
+        quotient2: part2 / divisor,
+    };
+}
+
+/**
+ * Build the hint string for a question. Division problems get a number-bond
+ * breakdown when a useful split exists (e.g. "70 ÷ 7 = 10, then 21 ÷ 7 = 3").
+ * Everything else (and division too small to split) gets a 10-wide range
+ * nudge, widened to ±5 when the answer is a multiple of 10.
+ */
+export function generateHint(
+    answer: number,
+    operation?: Operation,
+    dividend?: number,
+    divisor?: number
+): string {
+    if (
+        operation === "division" &&
+        dividend !== undefined &&
+        divisor !== undefined
+    ) {
+        const bond = buildNumberBond(dividend, divisor);
+        if (bond) {
+            return `${bond.part1} ÷ ${bond.divisor} = ${bond.quotient1}, then ${bond.part2} ÷ ${bond.divisor} = ${bond.quotient2}`;
+        }
+    }
     const lower = Math.floor(answer / 10) * 10;
     const upper = Math.ceil(answer / 10) * 10;
     if (answer % 10 === 0) {
@@ -89,7 +150,7 @@ export function generateQuestion(
             input2,
             operator: OPERATORS[op],
             answer,
-            hint: generateHint(answer),
+            hint: generateHint(answer, op, input1, input2),
         };
         attempts++;
     } while (

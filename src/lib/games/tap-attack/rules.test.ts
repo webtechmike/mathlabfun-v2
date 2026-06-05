@@ -46,6 +46,7 @@ describe("choiceCountForLevel", () => {
         [10, 4],
         [11, 4],
         [12, 4],
+        [13, 4],
     ] as const)("level %i → %i choices", (level, expected) => {
         expect(choiceCountForLevel(level)).toBe(expected);
     });

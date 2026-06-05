@@ -5,13 +5,15 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faClock,
     faFireFlameCurved,
+    faLightbulb,
     faLock,
     faLockOpen,
     faRocket,
 } from "@fortawesome/free-solid-svg-icons";
 import { Spaceship } from "@/components/Spaceship";
 import { cn } from "@/lib/utils";
-import { questionKey } from "../shared/question";
+import { buildNumberBond, questionKey } from "../shared/question";
+import type { NumberBond } from "../shared/question";
 import {
     LEVELS,
     generateLeveledQuestion,
@@ -39,6 +41,7 @@ export function TapAttack({ level: initialLevel }: GameComponentProps) {
     const [levelUpTo, setLevelUpTo] = useState<number | null>(null);
     const [question, setQuestion] = useState<Question | null>(null);
     const [choices, setChoices] = useState<number[]>([]);
+    const [showHint, setShowHint] = useState(false);
     const [feedback, setFeedback] = useState<Feedback>({ kind: "idle" });
     const [scoreStreak, setScoreStreak] = useState(0);
     const [bestStreak, setBestStreak] = useState(0);
@@ -73,6 +76,7 @@ export function TapAttack({ level: initialLevel }: GameComponentProps) {
             })
         );
         setFeedback({ kind: "idle" });
+        setShowHint(false);
         setLevelUpTo(null);
         setTimeLeft(spec.roundSeconds);
     }, []);
@@ -171,6 +175,11 @@ export function TapAttack({ level: initialLevel }: GameComponentProps) {
               : "text-space-100";
 
     const gridCols = choices.length === 3 ? "grid-cols-3" : "grid-cols-2";
+
+    const numberBond =
+        question.operator.label === "division"
+            ? buildNumberBond(question.input1, question.input2)
+            : null;
 
     return (
         <div className="relative mx-auto flex w-full max-w-2xl flex-col items-center gap-6 px-4 py-8">
@@ -286,10 +295,31 @@ export function TapAttack({ level: initialLevel }: GameComponentProps) {
             <Spaceship />
 
             <div className="flex w-full flex-col items-center gap-6">
-                <h1 className="text-5xl font-bold tracking-wide">
-                    {question.input1} {question.operator.symbol}{" "}
-                    {question.input2}
-                </h1>
+                <div className="flex items-center gap-3">
+                    <h1 className="text-5xl font-bold tracking-wide">
+                        {question.input1} {question.operator.symbol}{" "}
+                        {question.input2}
+                    </h1>
+                    <button
+                        type="button"
+                        onClick={() => setShowHint(true)}
+                        disabled={showHint || feedback.kind !== "idle"}
+                        className="text-spacebucks/80 hover:text-spacebucks text-2xl transition disabled:opacity-30"
+                        aria-label="Show a hint"
+                        title="Show a hint"
+                    >
+                        <FontAwesomeIcon icon={faLightbulb} />
+                    </button>
+                </div>
+
+                {showHint &&
+                    (numberBond ? (
+                        <NumberBondHint bond={numberBond} />
+                    ) : (
+                        <div className="text-spacebucks-soft text-sm">
+                            Hint: {question.hint}
+                        </div>
+                    ))}
 
                 <div className={cn("grid w-full gap-3", gridCols)}>
                     {choices.map((choice) => {
@@ -332,6 +362,77 @@ export function TapAttack({ level: initialLevel }: GameComponentProps) {
                     )}
                 </div>
             </div>
+        </div>
+    );
+}
+
+/**
+ * Renders a division number bond: the dividend at the top splitting into two
+ * round-tens parts, each shown as an easy division. We deliberately stop short
+ * of summing the two quotients so the learner does the final add themselves.
+ */
+function NumberBondHint({ bond }: { bond: NumberBond }) {
+    const parts: Array<{ part: number; quotient: number }> = [
+        { part: bond.part1, quotient: bond.quotient1 },
+        { part: bond.part2, quotient: bond.quotient2 },
+    ];
+
+    return (
+        <div
+            className="bg-space-800/60 ring-spacebucks/30 flex flex-col items-center gap-3 rounded-2xl px-6 py-4 ring-1"
+            role="status"
+            aria-live="polite"
+        >
+            <span className="text-spacebucks-soft text-xs tracking-wide uppercase opacity-80">
+                Number bond hint
+            </span>
+            <div className="flex flex-col items-center">
+                <div className="bg-spacebucks/20 ring-spacebucks text-spacebucks flex h-14 w-14 items-center justify-center rounded-full text-xl font-bold ring-1">
+                    {bond.dividend}
+                </div>
+                <svg
+                    width="160"
+                    height="26"
+                    viewBox="0 0 160 26"
+                    className="text-spacebucks/40"
+                    aria-hidden="true"
+                >
+                    <line
+                        x1="80"
+                        y1="0"
+                        x2="40"
+                        y2="26"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                    />
+                    <line
+                        x1="80"
+                        y1="0"
+                        x2="120"
+                        y2="26"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                    />
+                </svg>
+                <div className="flex gap-10">
+                    {parts.map(({ part, quotient }) => (
+                        <div
+                            key={part}
+                            className="flex flex-col items-center gap-1"
+                        >
+                            <div className="bg-space-700/70 ring-spacebucks/40 text-space-100 flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold ring-1">
+                                {part}
+                            </div>
+                            <span className="text-spacebucks-soft text-sm font-medium tabular-nums">
+                                {part} ÷ {bond.divisor} = {quotient}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+            <span className="text-space-100/70 text-xs">
+                Add the two answers together.
+            </span>
         </div>
     );
 }

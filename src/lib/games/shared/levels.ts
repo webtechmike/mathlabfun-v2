@@ -18,11 +18,12 @@ import { OPERATORS, compute, generateHint, questionKey } from "./question";
  *   9 → multiplication, products 0–100
  *  10 → multiplication, products −100–100
  *  11 → add + subtract + multiply, −100–100
- *  12 → all of the above + intro division, −100–100
+ *  12 → division facts (single-digit quotients), range hints
+ *  13 → all of the above + division (two-digit quotients), number-bond hints
  *
  * `choiceCount` drives the tap-attack grid: 3 options (1×3) while it's still
  * addition/subtraction (levels 1–7), 4 options (2×2) once multiplication
- * appears (levels 8–12).
+ * appears (levels 8–13).
  *
  * `roundSeconds` is the per-question countdown — generous early, tightening
  * later. `forgivingTimeout` means a timeout does NOT reset the reward streak,
@@ -38,9 +39,16 @@ export interface LevelSpec {
     choiceCount: 3 | 4;
     roundSeconds: number;
     forgivingTimeout: boolean;
+    /**
+     * For levels with division: the inclusive quotient range to generate.
+     * Single-digit quotients (e.g. 2–9) stay easy and show range hints;
+     * two-digit quotients (e.g. 11–15) unlock the number-bond hint. Ignored by
+     * non-division levels.
+     */
+    divisionQuotient?: { min: number; max: number };
 }
 
-export const MAX_LEVEL = 12;
+export const MAX_LEVEL = 13;
 
 export const LEVELS: LevelSpec[] = [
     {
@@ -155,6 +163,17 @@ export const LEVELS: LevelSpec[] = [
     },
     {
         level: 12,
+        label: "Division facts",
+        operations: ["division"],
+        minAnswer: 0,
+        maxAnswer: 99,
+        choiceCount: 4,
+        roundSeconds: 35,
+        forgivingTimeout: false,
+        divisionQuotient: { min: 2, max: 9 },
+    },
+    {
+        level: 13,
         label: "Mixed + division",
         operations: ["addition", "subtraction", "multiplication", "division"],
         minAnswer: -100,
@@ -162,6 +181,7 @@ export const LEVELS: LevelSpec[] = [
         choiceCount: 4,
         roundSeconds: 25,
         forgivingTimeout: false,
+        divisionQuotient: { min: 11, max: 15 },
     },
 ];
 
@@ -241,12 +261,21 @@ function buildMultiplication(spec: LevelSpec, rng: () => number): Operands {
 }
 
 /**
- * Intro division: always clean integer quotients (no remainders). We pick a
- * divisor and quotient in 2–9, then derive the dividend, so `a ÷ b` is exact.
+ * Division: always clean integer quotients (no remainders). We pick a divisor
+ * in 2–9 and a quotient in the level's `divisionQuotient` range, then derive
+ * the dividend, so `a ÷ b` is exact.
+ *
+ * The quotient range is the difficulty dial:
+ * - Single-digit (e.g. 2–9) keeps it to plain division facts; these fall back
+ *   to the range hint since there's no round-tens part to split.
+ * - Two-digit (e.g. 11–15, avoiding multiples of 10 which have no remainder)
+ *   is where the number-bond hint pays off, splitting the dividend into
+ *   friendlier round-tens parts (91 ÷ 7 → 70 ÷ 7, 21 ÷ 7).
  */
-function buildDivision(_spec: LevelSpec, rng: () => number): Operands {
+function buildDivision(spec: LevelSpec, rng: () => number): Operands {
+    const { min, max } = spec.divisionQuotient ?? { min: 2, max: 9 };
     const b = randInt(rng, 2, 9);
-    const q = randInt(rng, 2, 9);
+    const q = randInt(rng, min, max);
     return { a: b * q, b };
 }
 
@@ -298,7 +327,7 @@ export function generateLeveledQuestion(
             input2: b,
             operator: OPERATORS[op],
             answer,
-            hint: generateHint(answer),
+            hint: generateHint(answer, op, a, b),
         };
         attempts++;
     } while (

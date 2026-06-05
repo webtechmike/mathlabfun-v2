@@ -97,7 +97,7 @@ Profile already has `daily_streak` and `super_streak` columns. Needed:
 
 ### 4. Level progression — PARTIALLY SHIPPED — see [Design: Level progression](#design-level-progression)
 
-**Shipped (Jun 2026):** a 12-level curriculum in `src/lib/games/shared/levels.ts`
+**Shipped (Jun 2026):** a 13-level curriculum in `src/lib/games/shared/levels.ts`
 (gentle pre-K bottom, per-level timers), in-game progression, and parent-facing
 level selector + lock in Tap Attack. The remaining piece is **persistence** —
 level + lock state reset on refresh (blocked on #1).
@@ -207,20 +207,21 @@ do?**
 Per-level `roundSeconds` and `forgivingTimeout` (no streak reset on timeout)
 keep the early levels stress-free.
 
-| Lvl | Operations              | Answer range | Choices | Timer | Forgiving |
-| --- | ----------------------- | ------------ | ------- | ----- | --------- |
-| 1   | addition                | 0–5          | 3       | 60s   | yes       |
-| 2   | addition                | 0–10         | 3       | 60s   | yes       |
-| 3   | addition                | 0–20         | 3       | 50s   | yes       |
-| 4   | addition                | 0–50         | 3       | 45s   | yes       |
-| 5   | addition                | 0–99         | 3       | 40s   | no        |
-| 6   | addition                | −100–100     | 3       | 40s   | no        |
-| 7   | add, subtract           | −100–100     | 3       | 35s   | no        |
-| 8   | multiply                | 0–50         | 4       | 35s   | no        |
-| 9   | multiply                | 0–100        | 4       | 30s   | no        |
-| 10  | multiply                | −100–100     | 4       | 30s   | no        |
-| 11  | add, subtract, multiply | −100–100     | 4       | 25s   | no        |
-| 12  | + intro division        | −100–100     | 4       | 25s   | no        |
+| Lvl | Operations                | Answer range | Choices | Timer | Forgiving |
+| --- | ------------------------- | ------------ | ------- | ----- | --------- |
+| 1   | addition                  | 0–5          | 3       | 60s   | yes       |
+| 2   | addition                  | 0–10         | 3       | 60s   | yes       |
+| 3   | addition                  | 0–20         | 3       | 50s   | yes       |
+| 4   | addition                  | 0–50         | 3       | 45s   | yes       |
+| 5   | addition                  | 0–99         | 3       | 40s   | no        |
+| 6   | addition                  | −100–100     | 3       | 40s   | no        |
+| 7   | add, subtract             | −100–100     | 3       | 35s   | no        |
+| 8   | multiply                  | 0–50         | 4       | 35s   | no        |
+| 9   | multiply                  | 0–100        | 4       | 30s   | no        |
+| 10  | multiply                  | −100–100     | 4       | 30s   | no        |
+| 11  | add, subtract, multiply   | −100–100     | 4       | 25s   | no        |
+| 12  | division facts (÷, q 2–9) | 0–99         | 4       | 35s   | no        |
+| 13  | + division (q 11–15)      | −100–100     | 4       | 25s   | no        |
 
 To retune: edit `LEVELS` in `levels.ts` (ranges, timers, forgiveness). To
 change the advance threshold or make wrong answers demote, edit
