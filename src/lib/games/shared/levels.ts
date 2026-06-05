@@ -12,8 +12,8 @@ import { OPERATORS, compute, generateHint, questionKey } from "./question";
  *   3 → addition, sums 0–20
  *   4 → addition, sums 0–50
  *   5 → addition, sums 0–99
- *   6 → addition, −100–100     (negatives introduced)
- *   7 → addition + subtraction, −100–100
+ *   6 → subtraction, 0–20      (subtraction introduced)
+ *   7 → addition + subtraction, −100–100 (negatives introduced)
  *   8 → multiplication, products 0–50
  *   9 → multiplication, products 0–100
  *  10 → multiplication, products −100–100
@@ -103,12 +103,12 @@ export const LEVELS: LevelSpec[] = [
     },
     {
         level: 6,
-        label: "Addition with negatives",
-        operations: ["addition"],
-        minAnswer: -100,
-        maxAnswer: 100,
+        label: "Subtraction up to 20",
+        operations: ["subtraction"],
+        minAnswer: 0,
+        maxAnswer: 20,
         choiceCount: 3,
-        roundSeconds: 40,
+        roundSeconds: 45,
         forgivingTimeout: false,
     },
     {

@@ -8,14 +8,16 @@ import {
 } from "./question";
 
 describe("generateHint", () => {
-    test("non-multiple of 10 returns the bracketing tens", () => {
-        expect(generateHint(13)).toBe("A number between 10 and 20");
+    test("small answers get a tight ±2 window", () => {
+        // |8| * 0.1 = 0.8 → rounds to 1 → floored to the ±2 minimum.
+        expect(generateHint(8)).toBe("A number between 6 and 10");
     });
-    test("multiple of 10 widens to ±5", () => {
-        expect(generateHint(20)).toBe("A number between 15 and 25");
+    test("window scales with the answer magnitude", () => {
+        // |91| * 0.1 = 9.1 → 9.
+        expect(generateHint(91)).toBe("A number between 82 and 100");
     });
-    test("zero is treated as a multiple of 10", () => {
-        expect(generateHint(0)).toBe("A number between -5 and 5");
+    test("zero gets the ±2 minimum window", () => {
+        expect(generateHint(0)).toBe("A number between -2 and 2");
     });
     test("two-digit division quotient yields a number-bond hint", () => {
         expect(generateHint(13, "division", 91, 7)).toBe(
@@ -25,7 +27,7 @@ describe("generateHint", () => {
     test("single-digit division quotient falls back to range hint", () => {
         // 56 ÷ 8 = 7: tens-part is 0, so no useful bond.
         expect(generateHint(7, "division", 56, 8)).toBe(
-            "A number between 0 and 10"
+            "A number between 5 and 9"
         );
     });
 });

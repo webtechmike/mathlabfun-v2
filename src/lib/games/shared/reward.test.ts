@@ -210,6 +210,53 @@ describe("calculateReward", () => {
         });
     });
 
+    describe("help penalty", () => {
+        test("halves the reward (floored) when help was used", () => {
+            // multiplication base 3 → floor(3/2) = 1.
+            expect(
+                calculateReward({
+                    operation: "multiplication",
+                    isSuperStreakActive: false,
+                    question: q(4, 6, "multiplication"),
+                    helpUsed: true,
+                })
+            ).toBe(1);
+        });
+        test("applies after super streak and level bonuses", () => {
+            // base 3 + level 4 bonus (2) = 5, ×2 super = 10, ÷2 help = 5.
+            expect(
+                calculateReward({
+                    operation: "multiplication",
+                    isSuperStreakActive: true,
+                    question: q(5, 3, "multiplication"),
+                    level: 4,
+                    helpUsed: true,
+                })
+            ).toBe(5);
+        });
+        test("never drops below 1", () => {
+            // addition base 1 → floor(1/2) = 0 → clamped to 1.
+            expect(
+                calculateReward({
+                    operation: "addition",
+                    isSuperStreakActive: false,
+                    question: q(5, 3, "addition"),
+                    helpUsed: true,
+                })
+            ).toBe(1);
+        });
+        test("no penalty when help was not used", () => {
+            expect(
+                calculateReward({
+                    operation: "multiplication",
+                    isSuperStreakActive: false,
+                    question: q(4, 6, "multiplication"),
+                    helpUsed: false,
+                })
+            ).toBe(3);
+        });
+    });
+
     describe("edge cases", () => {
         test("missing question → just base reward", () => {
             expect(

@@ -66,10 +66,21 @@ export function buildNumberBond(
 }
 
 /**
+ * Half-width of the range hint window. We center the window on the answer and
+ * scale it to the answer's magnitude (~±10%, floored at ±2) so the hint stays
+ * useful at every level: tight when answers are small (e.g. 8 → 6–10 instead
+ * of a useless 0–10) and proportionally wider — never a giveaway — when answers
+ * are large (e.g. 91 → 82–100).
+ */
+export function hintRangeHalfWidth(answer: number): number {
+    return Math.max(2, Math.round(Math.abs(answer) * 0.1));
+}
+
+/**
  * Build the hint string for a question. Division problems get a number-bond
  * breakdown when a useful split exists (e.g. "70 ÷ 7 = 10, then 21 ÷ 7 = 3").
- * Everything else (and division too small to split) gets a 10-wide range
- * nudge, widened to ±5 when the answer is a multiple of 10.
+ * Everything else (and division too small to split) gets an answer-centered
+ * range nudge whose width scales with the answer's magnitude.
  */
 export function generateHint(
     answer: number,
@@ -87,12 +98,8 @@ export function generateHint(
             return `${bond.part1} ÷ ${bond.divisor} = ${bond.quotient1}, then ${bond.part2} ÷ ${bond.divisor} = ${bond.quotient2}`;
         }
     }
-    const lower = Math.floor(answer / 10) * 10;
-    const upper = Math.ceil(answer / 10) * 10;
-    if (answer % 10 === 0) {
-        return `A number between ${answer - 5} and ${answer + 5}`;
-    }
-    return `A number between ${lower} and ${upper}`;
+    const half = hintRangeHalfWidth(answer);
+    return `A number between ${answer - half} and ${answer + half}`;
 }
 
 /**

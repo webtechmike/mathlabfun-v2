@@ -9,6 +9,12 @@ export interface CalculateRewardInput {
     question?: Pick<Question, "input1" | "input2" | "operator">;
     /** Game level. Adds Math.floor(level / 2) to the base reward. */
     level?: number;
+    /**
+     * Whether the player used a hint/lifeline on this question. Help halves the
+     * final reward (floored, minimum 1) so a learner who needs a nudge still
+     * earns something, but less than an unaided answer.
+     */
+    helpUsed?: boolean;
 }
 
 const BASE_BY_OPERATION: Record<Operation, number> = {
@@ -28,12 +34,14 @@ const BASE_BY_OPERATION: Record<Operation, number> = {
  * - +1 when the question's result is negative.
  * - +Math.floor(level / 2) as a level bonus.
  * - ×2 when the player's super streak is active.
+ * - ÷2 (floored, min 1) when the player used help on this question.
  */
 export function calculateReward({
     operation,
     isSuperStreakActive,
     question,
     level = 1,
+    helpUsed = false,
 }: CalculateRewardInput): number {
     let reward = BASE_BY_OPERATION[operation] ?? 1;
 
@@ -53,6 +61,10 @@ export function calculateReward({
 
     if (isSuperStreakActive) {
         reward *= 2;
+    }
+
+    if (helpUsed) {
+        reward = Math.max(1, Math.floor(reward / 2));
     }
 
     return reward;

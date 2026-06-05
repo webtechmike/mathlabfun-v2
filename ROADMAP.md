@@ -133,7 +133,7 @@ Each new game costs roughly: 1 component + 1 rules file (if novel mechanics)
 Playtesting with a 4-year-old surfaced these. None are blocking; pick up next
 session.
 
-- **Upper addition/subtraction may still be too hard.** Levels 6–7 introduce
+- **Upper addition/subtraction may still be too hard.** Level 7 introduces
   two-digit and negative numbers (e.g. `−47 + 88`), which can be a wall for a
   young learner even though the answer is in range. Idea: split the jump —
   keep two-digit positives for a level or two before introducing negatives,
@@ -141,12 +141,17 @@ session.
   `maxOperand` to `LevelSpec` so we can keep answers ±100 while keeping the
   _displayed numbers_ smaller). Needs product thought on the exact ramp before
   implementing.
-- **Hints are missing in Tap Attack.** Math Attack has a hint button
-  (`generateHint` / `question.hint` exists and is populated), but Tap Attack
-  never surfaces it. Options: a "?" button that highlights/eliminates one wrong
-  choice (50/50 lifeline), or shows the range hint text. Eliminating a
-  distractor is the more tap-friendly version. Decide whether hints cost
-  something (e.g. reduced reward for that question) like Math Attack's flow.
+- **Hints in Tap Attack — SHIPPED (Jun 2026).** A lightbulb button gives
+  progressive help: first press shows the hint (a number-bond breakdown for
+  two-digit-quotient division, otherwise an answer-centered range), further
+  presses gray out a wrong choice (50/50 lifeline) down to answer + 1 wrong.
+  The range hint now scales with the answer magnitude (`hintRangeHalfWidth`)
+  so it stays useful at low levels instead of spanning every choice. Using any
+  help halves that question's reward (`helpUsed` in `calculateReward`), in both
+  Tap Attack and Math Attack.
+- **Pause — SHIPPED (Jun 2026).** Both games have a pause button by the timer
+  that freezes the countdown and hides the problem behind a "Paused" panel, so
+  a kid can take a break or step away without losing their streak.
 - **Spacing between gameplay and stats.** The progress bar / stat block sits
   too close to the play area. Add vertical breathing room — likely a larger
   gap (or a divider) between the spaceship and the progress bar, or group the
@@ -214,7 +219,7 @@ keep the early levels stress-free.
 | 3   | addition                  | 0–20         | 3       | 50s   | yes       |
 | 4   | addition                  | 0–50         | 3       | 45s   | yes       |
 | 5   | addition                  | 0–99         | 3       | 40s   | no        |
-| 6   | addition                  | −100–100     | 3       | 40s   | no        |
+| 6   | subtract                  | 0–20         | 3       | 45s   | no        |
 | 7   | add, subtract             | −100–100     | 3       | 35s   | no        |
 | 8   | multiply                  | 0–50         | 4       | 35s   | no        |
 | 9   | multiply                  | 0–100        | 4       | 30s   | no        |
