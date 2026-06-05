@@ -2,17 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-    faCircleQuestion,
-    faClock,
-    faFireFlameCurved,
-    faPause,
-    faPlay,
-} from "@fortawesome/free-solid-svg-icons";
+import { faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
 import { Spaceship } from "@/components/Spaceship";
 import { cn } from "@/lib/utils";
 import { generateQuestion, questionKey } from "../shared/question";
 import { calculateReward } from "../shared/reward";
+import {
+    GameLayout,
+    GameStatusHeader,
+    GameTimer,
+    PausedPanel,
+} from "../shared/ui";
 import type { GameComponentProps, Question } from "../types";
 
 const ROUND_SECONDS = 30;
@@ -98,71 +98,24 @@ export function MathAttack({ level }: GameComponentProps) {
         }
     };
 
-    const timerTone =
-        timeLeft <= 10
-            ? "text-critical"
-            : timeLeft <= 15
-              ? "text-warning"
-              : "text-space-100";
-
     return (
-        <div className="relative mx-auto flex w-full max-w-2xl flex-col items-center gap-8 px-4 py-8">
-            <div className="bg-space-800/60 ring-streak/20 flex w-full items-center justify-between rounded-2xl px-4 py-3 ring-1 backdrop-blur">
-                <div className="flex items-center gap-2">
-                    <FontAwesomeIcon
-                        icon={faFireFlameCurved}
-                        className="text-streak"
-                    />
-                    <span className="text-sm tracking-wide uppercase opacity-80">
-                        Streak
-                    </span>
-                    <span className="text-2xl font-bold">{scoreStreak}</span>
-                    <span className="ml-3 text-xs opacity-60">
-                        Best {bestStreak}
-                    </span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <FontAwesomeIcon icon={faClock} />
-                    <span
-                        className={cn(
-                            "text-2xl font-bold tabular-nums",
-                            timerTone
-                        )}
-                    >
-                        {timeLeft}s
-                    </span>
-                    <button
-                        type="button"
-                        onClick={() => setPaused((p) => !p)}
-                        aria-pressed={paused}
-                        title={paused ? "Resume" : "Pause the timer"}
-                        className={cn(
-                            "ml-1 flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-sm font-medium ring-1 transition",
-                            paused
-                                ? "bg-spacebucks/20 ring-spacebucks text-spacebucks"
-                                : "bg-space-800/70 ring-space-100/20 hover:ring-spacebucks/60"
-                        )}
-                    >
-                        <FontAwesomeIcon icon={paused ? faPlay : faPause} />
-                        {paused ? "Resume" : "Pause"}
-                    </button>
-                </div>
-                <div className="text-sm opacity-80">
-                    Spacebucks{" "}
-                    <span className="text-spacebucks font-semibold">
-                        {spacebucks}
-                    </span>
-                </div>
-            </div>
+        <GameLayout>
+            <GameStatusHeader
+                streak={scoreStreak}
+                bestStreak={bestStreak}
+                spacebucks={spacebucks}
+            />
+
+            <GameTimer
+                timeLeft={timeLeft}
+                paused={paused}
+                onTogglePause={() => setPaused((p) => !p)}
+            />
 
             <Spaceship />
 
             {paused ? (
-                <div className="bg-space-800/60 ring-spacebucks/30 flex w-full flex-col items-center gap-4 rounded-2xl px-6 py-10 text-center ring-1">
-                    <div className="text-spacebucks flex items-center gap-2 text-sm font-semibold tracking-wide uppercase">
-                        <FontAwesomeIcon icon={faPause} />
-                        Paused
-                    </div>
+                <PausedPanel onResume={() => setPaused(false)}>
                     {showHint && (
                         <>
                             <h1 className="text-5xl font-bold tracking-wide">
@@ -174,18 +127,7 @@ export function MathAttack({ level }: GameComponentProps) {
                             </div>
                         </>
                     )}
-                    <p className="text-space-100/70 text-sm">
-                        Take your time — the timer is stopped.
-                    </p>
-                    <button
-                        type="button"
-                        onClick={() => setPaused(false)}
-                        className="bg-spacebucks text-space-900 mt-2 flex items-center gap-2 rounded-lg px-5 py-2 text-lg font-semibold transition hover:brightness-110"
-                    >
-                        <FontAwesomeIcon icon={faPlay} />
-                        Resume
-                    </button>
-                </div>
+                </PausedPanel>
             ) : (
                 <div className="flex w-full flex-col items-center gap-4">
                     <div className="flex items-center gap-3">
@@ -238,6 +180,6 @@ export function MathAttack({ level }: GameComponentProps) {
                     </form>
                 </div>
             )}
-        </div>
+        </GameLayout>
     );
 }

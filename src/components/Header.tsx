@@ -25,7 +25,7 @@ export async function Header() {
     }
 
     return (
-        <header className="absolute top-6 right-6 z-10 flex items-center gap-4 text-white">
+        <div className="flex shrink-0 items-center gap-4 text-white">
             {isLoggedIn ? (
                 <>
                     <div className="flex items-center gap-2">
@@ -45,6 +45,6 @@ export async function Header() {
                     <FontAwesomeIcon icon={faUserSecret} size="2x" />
                 </Link>
             )}
-        </header>
+        </div>
     );
 }

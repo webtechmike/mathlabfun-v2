@@ -3,17 +3,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-    faClock,
-    faFireFlameCurved,
     faLightbulb,
     faLock,
     faLockOpen,
-    faPause,
-    faPlay,
     faRocket,
 } from "@fortawesome/free-solid-svg-icons";
 import { Spaceship } from "@/components/Spaceship";
+import { GameControlsPortal } from "@/components/GameHeaderPortal";
 import { cn } from "@/lib/utils";
+import {
+    GameLayout,
+    GameStatusHeader,
+    GameTimer,
+    PausedPanel,
+} from "../shared/ui";
 import { buildNumberBond, questionKey } from "../shared/question";
 import type { NumberBond } from "../shared/question";
 import {
@@ -198,13 +201,6 @@ export function TapAttack({ level: initialLevel }: GameComponentProps) {
     const atMaxLevel = level >= MAX_LEVEL;
     const progressPct = Math.round((correctAtLevel / CORRECT_TO_ADVANCE) * 100);
 
-    const timerTone =
-        timeLeft <= 10
-            ? "text-critical"
-            : timeLeft <= 15
-              ? "text-warning"
-              : "text-space-100";
-
     const gridCols = choices.length === 3 ? "grid-cols-3" : "grid-cols-2";
 
     const numberBond =
@@ -221,100 +217,62 @@ export function TapAttack({ level: initialLevel }: GameComponentProps) {
           : "No more help";
 
     return (
-        <div className="relative mx-auto flex w-full max-w-2xl flex-col items-center gap-6 px-4 py-8">
-            <div className="flex w-full flex-wrap items-center justify-center gap-3">
-                <label
-                    htmlFor="level-select"
-                    className="text-sm tracking-wide uppercase opacity-80"
-                >
-                    Level
-                </label>
-                <select
-                    id="level-select"
-                    value={level}
-                    onChange={(e) => goToLevel(Number(e.target.value))}
-                    className="bg-space-800/80 ring-space-100/20 focus:ring-spacebucks rounded-lg px-3 py-2 text-sm ring-1 transition outline-none focus:ring-2"
-                >
-                    {LEVELS.map((l) => (
-                        <option key={l.level} value={l.level}>
-                            {l.level} — {l.label}
-                        </option>
-                    ))}
-                </select>
-                <button
-                    type="button"
-                    onClick={() => setPinned((p) => !p)}
-                    aria-pressed={pinned}
-                    title={
-                        pinned
-                            ? "Unlock to resume level progression"
-                            : "Lock to stay on this level"
-                    }
-                    className={cn(
-                        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium ring-1 transition",
-                        pinned
-                            ? "bg-spacebucks/20 ring-spacebucks text-spacebucks"
-                            : "bg-space-800/70 ring-space-100/20 hover:ring-spacebucks/60"
-                    )}
-                >
-                    <FontAwesomeIcon icon={pinned ? faLock : faLockOpen} />
-                    {pinned ? "Locked" : "Lock"}
-                </button>
-            </div>
+        <GameLayout>
+            <GameStatusHeader
+                level={level}
+                streak={scoreStreak}
+                bestStreak={bestStreak}
+                spacebucks={spacebucks}
+            />
 
-            <div className="flex items-center gap-3">
-                <FontAwesomeIcon icon={faClock} />
-                <span
-                    className={cn("text-2xl font-bold tabular-nums", timerTone)}
-                >
-                    {timeLeft}s
-                </span>
-                <button
-                    type="button"
-                    onClick={() => setPaused((p) => !p)}
-                    disabled={feedback.kind !== "idle"}
-                    aria-pressed={paused}
-                    title={paused ? "Resume" : "Pause the timer"}
-                    className={cn(
-                        "flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium ring-1 transition disabled:opacity-30",
-                        paused
-                            ? "bg-spacebucks/20 ring-spacebucks text-spacebucks"
-                            : "bg-space-800/70 ring-space-100/20 hover:ring-spacebucks/60"
-                    )}
-                >
-                    <FontAwesomeIcon icon={paused ? faPlay : faPause} />
-                    {paused ? "Resume" : "Pause"}
-                </button>
-            </div>
-
-            <div className="bg-space-800/60 ring-streak/20 flex w-full items-center justify-between rounded-2xl px-4 py-3 ring-1 backdrop-blur">
-                <div className="flex items-center gap-2">
-                    <FontAwesomeIcon
-                        icon={faRocket}
-                        className="text-spacebucks"
-                    />
-                    <span className="text-sm tracking-wide uppercase opacity-80">
+            <GameControlsPortal>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                    <label
+                        htmlFor="level-select"
+                        className="text-sm tracking-wide uppercase opacity-80"
+                    >
                         Level
-                    </span>
-                    <span className="text-2xl font-bold">{level}</span>
+                    </label>
+                    <select
+                        id="level-select"
+                        value={level}
+                        onChange={(e) => goToLevel(Number(e.target.value))}
+                        className="bg-space-800/80 ring-space-100/20 focus:ring-spacebucks rounded-lg px-3 py-2 text-sm ring-1 transition outline-none focus:ring-2"
+                    >
+                        {LEVELS.map((l) => (
+                            <option key={l.level} value={l.level}>
+                                {l.level} — {l.label}
+                            </option>
+                        ))}
+                    </select>
+                    <button
+                        type="button"
+                        onClick={() => setPinned((p) => !p)}
+                        aria-pressed={pinned}
+                        title={
+                            pinned
+                                ? "Unlock to resume level progression"
+                                : "Lock to stay on this level"
+                        }
+                        className={cn(
+                            "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium ring-1 transition",
+                            pinned
+                                ? "bg-spacebucks/20 ring-spacebucks text-spacebucks"
+                                : "bg-space-800/70 ring-space-100/20 hover:ring-spacebucks/60"
+                        )}
+                    >
+                        <FontAwesomeIcon icon={pinned ? faLock : faLockOpen} />
+                        {pinned ? "Locked" : "Lock"}
+                    </button>
                 </div>
-                <div className="flex items-center gap-2">
-                    <FontAwesomeIcon
-                        icon={faFireFlameCurved}
-                        className="text-streak"
-                    />
-                    <span className="text-2xl font-bold">{scoreStreak}</span>
-                    <span className="ml-1 text-xs opacity-60">
-                        Best {bestStreak}
-                    </span>
-                </div>
-                <div className="text-sm opacity-80">
-                    Spacebucks{" "}
-                    <span className="text-spacebucks font-semibold">
-                        {spacebucks}
-                    </span>
-                </div>
-            </div>
+            </GameControlsPortal>
+
+            <GameTimer
+                timeLeft={timeLeft}
+                paused={paused}
+                onTogglePause={() => setPaused((p) => !p)}
+                pauseDisabled={feedback.kind !== "idle"}
+            />
 
             <div className="w-full">
                 <div className="mb-1 flex justify-between text-xs opacity-70">
@@ -350,11 +308,7 @@ export function TapAttack({ level: initialLevel }: GameComponentProps) {
             <Spaceship />
 
             {paused ? (
-                <div className="bg-space-800/60 ring-spacebucks/30 flex w-full flex-col items-center gap-4 rounded-2xl px-6 py-10 text-center ring-1">
-                    <div className="text-spacebucks flex items-center gap-2 text-sm font-semibold tracking-wide uppercase">
-                        <FontAwesomeIcon icon={faPause} />
-                        Paused
-                    </div>
+                <PausedPanel onResume={() => setPaused(false)}>
                     {showHint && (
                         <>
                             <h1 className="text-5xl font-bold tracking-wide">
@@ -370,18 +324,7 @@ export function TapAttack({ level: initialLevel }: GameComponentProps) {
                             )}
                         </>
                     )}
-                    <p className="text-space-100/70 text-sm">
-                        Take your time — the timer is stopped.
-                    </p>
-                    <button
-                        type="button"
-                        onClick={() => setPaused(false)}
-                        className="bg-spacebucks text-space-900 mt-2 flex items-center gap-2 rounded-lg px-5 py-2 text-lg font-semibold transition hover:brightness-110"
-                    >
-                        <FontAwesomeIcon icon={faPlay} />
-                        Resume
-                    </button>
-                </div>
+                </PausedPanel>
             ) : (
                 <div className="flex w-full flex-col items-center gap-6">
                     <div className="flex items-center gap-3">
@@ -461,7 +404,7 @@ export function TapAttack({ level: initialLevel }: GameComponentProps) {
                     </div>
                 </div>
             )}
-        </div>
+        </GameLayout>
     );
 }
 
