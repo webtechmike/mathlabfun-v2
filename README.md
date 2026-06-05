@@ -99,12 +99,16 @@ changes.
 
 ### Level curriculum
 
-Tap Attack uses a 12-level curriculum defined in
+Tap Attack uses a 13-level curriculum defined in
 `src/lib/games/shared/levels.ts`. The bottom of the ramp is deliberately tiny
 (sums to 5, then 10, then 20…) so a pre-K learner can succeed, then difficulty
 grows by widening the answer range, introducing negatives, and layering
-operations — addition only (L1–6) → subtraction (L7) → multiplication (L8–10)
-→ mixed (L11) → intro division (L12). Choices step from 3 (L1–7) to 4 (L8–12).
+operations — addition (L1–5) → subtraction (L6) → add & subtract with
+negatives (L7) → multiplication (L8–10)
+→ mixed (L11) → division facts (L12) → mixed with two-digit-quotient division
+(L13). Choices step from 3 (L1–7) to 4 (L8–13). Division facts (L12) use
+single-digit quotients with range hints; the L13 division uses two-digit
+quotients that unlock number-bond hints (91 ÷ 7 → 70 ÷ 7 + 21 ÷ 7).
 
 Each level also carries its own `roundSeconds` (60s at the bottom, tightening
 to 25s at the top) and a `forgivingTimeout` flag — on the easiest levels

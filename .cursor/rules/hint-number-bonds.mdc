@@ -1,0 +1,47 @@
+---
+description: Design intent for division number bond hints
+globs: src/lib/games/**
+alwaysApply: false
+---
+
+# Number Bond Hints (Division)
+
+When hints are surfaced, division problems should be hinted with a **number
+bond** breakdown rather than the generic range nudge in `generateHint()`.
+
+## Concept
+
+A large dividend is hard to reason about directly, but splitting it into two
+parts that are each cleanly divisible by the divisor makes it easy:
+
+```
+91 ÷ 7   is tough to grasp directly
+70 ÷ 7 = 10   and   21 ÷ 7 = 3   →   10 + 3 = 13
+```
+
+## Algorithm
+
+For `a ÷ b`, decompose `a` into `part1 + part2` where both parts are multiples
+of `b`:
+
+1. Find a round multiple of `b` at or below `a`:
+   `part1 = Math.floor(a / b / 10) * 10 * b` (e.g. `70` for `91 ÷ 7`)
+2. `part2 = a - part1` (e.g. `21`)
+3. Hint shows both easier divisions: `part1 ÷ b` and `part2 ÷ b`.
+
+Guard against `part1 === 0` (small dividends) — fall back to the range hint.
+
+## Scope
+
+- Only division uses the number bond hint.
+- Addition, subtraction, and multiplication keep the existing range hint.
+- A bond only forms for **two-digit quotients** (the tens-part is 0 otherwise).
+  Levels control this via `LevelSpec.divisionQuotient` and `buildDivision`:
+  - The "Division facts" level uses single-digit quotients (2-9) → range hints.
+  - The "Mixed + division" level uses two-digit quotients (11-15, never
+    multiples of 10) → number-bond hints on every division.
+  Keep the single-digit range-hint fallback working for the simpler level.
+- `generateHint()` in `src/lib/games/shared/question.ts` will need the
+  `operator` and `input2` (divisor) to produce division-specific text;
+  `generateLeveledQuestion` in `levels.ts` must pass that context.
+- `Question.hint` stays a `string` — no type changes required.

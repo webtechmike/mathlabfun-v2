@@ -6,6 +6,8 @@ import {
     faCircleQuestion,
     faClock,
     faFireFlameCurved,
+    faPause,
+    faPlay,
 } from "@fortawesome/free-solid-svg-icons";
 import { Spaceship } from "@/components/Spaceship";
 import { cn } from "@/lib/utils";
@@ -20,6 +22,8 @@ export function MathAttack({ level }: GameComponentProps) {
     const [currentAnswer, setCurrentAnswer] = useState("");
     const [showHint, setShowHint] = useState(false);
     const [helpCount, setHelpCount] = useState(0);
+    const [helpUsed, setHelpUsed] = useState(false);
+    const [paused, setPaused] = useState(false);
     const [scoreStreak, setScoreStreak] = useState(0);
     const [bestStreak, setBestStreak] = useState(0);
     const [spacebucks, setSpacebucks] = useState(0);
@@ -34,6 +38,8 @@ export function MathAttack({ level }: GameComponentProps) {
         setCurrentAnswer("");
         setShowHint(false);
         setHelpCount(0);
+        setHelpUsed(false);
+        setPaused(false);
         setTimeLeft(ROUND_SECONDS);
         inputRef.current?.focus();
     }, []);
@@ -43,7 +49,7 @@ export function MathAttack({ level }: GameComponentProps) {
     }, [question, startNewQuestion]);
 
     useEffect(() => {
-        if (!question) return;
+        if (!question || paused) return;
         const id = setTimeout(() => {
             if (timeLeft <= 1) {
                 setScoreStreak(0);
@@ -53,7 +59,7 @@ export function MathAttack({ level }: GameComponentProps) {
             }
         }, 1000);
         return () => clearTimeout(id);
-    }, [timeLeft, question, startNewQuestion]);
+    }, [timeLeft, question, paused, startNewQuestion]);
 
     if (!question) return null;
 
@@ -71,6 +77,7 @@ export function MathAttack({ level }: GameComponentProps) {
             isSuperStreakActive: false,
             question,
             level,
+            helpUsed,
         });
         const nextStreak = scoreStreak + 1;
         setScoreStreak(nextStreak);
@@ -80,6 +87,7 @@ export function MathAttack({ level }: GameComponentProps) {
     };
 
     const onHelp = () => {
+        setHelpUsed(true);
         if (helpCount === 0) {
             setShowHint(true);
             setHelpCount(1);
@@ -123,6 +131,21 @@ export function MathAttack({ level }: GameComponentProps) {
                     >
                         {timeLeft}s
                     </span>
+                    <button
+                        type="button"
+                        onClick={() => setPaused((p) => !p)}
+                        aria-pressed={paused}
+                        title={paused ? "Resume" : "Pause the timer"}
+                        className={cn(
+                            "ml-1 flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-sm font-medium ring-1 transition",
+                            paused
+                                ? "bg-spacebucks/20 ring-spacebucks text-spacebucks"
+                                : "bg-space-800/70 ring-space-100/20 hover:ring-spacebucks/60"
+                        )}
+                    >
+                        <FontAwesomeIcon icon={paused ? faPlay : faPause} />
+                        {paused ? "Resume" : "Pause"}
+                    </button>
                 </div>
                 <div className="text-sm opacity-80">
                     Spacebucks{" "}
@@ -134,53 +157,87 @@ export function MathAttack({ level }: GameComponentProps) {
 
             <Spaceship />
 
-            <div className="flex w-full flex-col items-center gap-4">
-                <div className="flex items-center gap-3">
-                    <h1 className="text-5xl font-bold tracking-wide">
-                        {question.input1} {question.operator.symbol}{" "}
-                        {question.input2}
-                    </h1>
+            {paused ? (
+                <div className="bg-space-800/60 ring-spacebucks/30 flex w-full flex-col items-center gap-4 rounded-2xl px-6 py-10 text-center ring-1">
+                    <div className="text-spacebucks flex items-center gap-2 text-sm font-semibold tracking-wide uppercase">
+                        <FontAwesomeIcon icon={faPause} />
+                        Paused
+                    </div>
+                    {showHint && (
+                        <>
+                            <h1 className="text-5xl font-bold tracking-wide">
+                                {question.input1} {question.operator.symbol}{" "}
+                                {question.input2}
+                            </h1>
+                            <div className="text-spacebucks-soft text-sm">
+                                Hint: {question.hint}
+                            </div>
+                        </>
+                    )}
+                    <p className="text-space-100/70 text-sm">
+                        Take your time — the timer is stopped.
+                    </p>
                     <button
                         type="button"
-                        onClick={onHelp}
-                        className="hover:text-spacebucks text-2xl transition"
-                        aria-label="Help"
+                        onClick={() => setPaused(false)}
+                        className="bg-spacebucks text-space-900 mt-2 flex items-center gap-2 rounded-lg px-5 py-2 text-lg font-semibold transition hover:brightness-110"
                     >
-                        <FontAwesomeIcon icon={faCircleQuestion} />
+                        <FontAwesomeIcon icon={faPlay} />
+                        Resume
                     </button>
                 </div>
-                {showHint && (
-                    <div className="text-spacebucks-soft text-sm">
-                        Hint: {question.hint}
+            ) : (
+                <div className="flex w-full flex-col items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-5xl font-bold tracking-wide">
+                            {question.input1} {question.operator.symbol}{" "}
+                            {question.input2}
+                        </h1>
+                        <button
+                            type="button"
+                            onClick={onHelp}
+                            className="hover:text-spacebucks text-2xl transition"
+                            aria-label="Help"
+                        >
+                            <FontAwesomeIcon icon={faCircleQuestion} />
+                        </button>
                     </div>
-                )}
+                    {showHint && (
+                        <div className="text-spacebucks-soft text-sm">
+                            Hint: {question.hint}
+                        </div>
+                    )}
 
-                <form onSubmit={onSubmit} className="flex items-center gap-2">
-                    <label htmlFor="answer" className="sr-only">
-                        Answer
-                    </label>
-                    <input
-                        ref={inputRef}
-                        id="answer"
-                        type="number"
-                        autoComplete="off"
-                        autoFocus
-                        value={currentAnswer}
-                        onChange={(e) => setCurrentAnswer(e.target.value)}
-                        className={cn(
-                            "bg-space-800/70 ring-space-100/20 focus:ring-spacebucks w-32 rounded-lg px-3 py-2 text-center text-2xl ring-1 transition outline-none focus:ring-2",
-                            isCorrect && "ring-correct text-correct"
-                        )}
-                    />
-                    <button
-                        type="submit"
-                        disabled={!isCorrect}
-                        className="bg-spacebucks text-space-900 disabled:bg-space-100/20 disabled:text-space-100/40 rounded-lg px-4 py-2 text-lg font-semibold transition hover:brightness-110 disabled:cursor-not-allowed"
+                    <form
+                        onSubmit={onSubmit}
+                        className="flex items-center gap-2"
                     >
-                        NEXT
-                    </button>
-                </form>
-            </div>
+                        <label htmlFor="answer" className="sr-only">
+                            Answer
+                        </label>
+                        <input
+                            ref={inputRef}
+                            id="answer"
+                            type="number"
+                            autoComplete="off"
+                            autoFocus
+                            value={currentAnswer}
+                            onChange={(e) => setCurrentAnswer(e.target.value)}
+                            className={cn(
+                                "bg-space-800/70 ring-space-100/20 focus:ring-spacebucks w-32 rounded-lg px-3 py-2 text-center text-2xl ring-1 transition outline-none focus:ring-2",
+                                isCorrect && "ring-correct text-correct"
+                            )}
+                        />
+                        <button
+                            type="submit"
+                            disabled={!isCorrect}
+                            className="bg-spacebucks text-space-900 disabled:bg-space-100/20 disabled:text-space-100/40 rounded-lg px-4 py-2 text-lg font-semibold transition hover:brightness-110 disabled:cursor-not-allowed"
+                        >
+                            NEXT
+                        </button>
+                    </form>
+                </div>
+            )}
         </div>
     );
 }

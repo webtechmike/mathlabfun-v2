@@ -5,10 +5,24 @@ import {
     generateLeveledQuestion,
     getLevelSpec,
 } from "./levels";
+import { buildNumberBond } from "./question";
 
-/** The level whose curriculum includes division. */
-const DIVISION_LEVEL = LEVELS.find((l) =>
+/** Every level whose curriculum includes division. */
+const DIVISION_LEVELS = LEVELS.filter((l) =>
     l.operations.includes("division")
+).map((l) => l.level);
+
+/** The simple, division-only level with single-digit quotients (range hints). */
+const SIMPLE_DIVISION_LEVEL = LEVELS.find(
+    (l) =>
+        l.operations.length === 1 &&
+        l.operations[0] === "division" &&
+        (l.divisionQuotient?.max ?? 9) <= 9
+)!.level;
+
+/** The level whose division has two-digit quotients (number-bond hints). */
+const BOND_DIVISION_LEVEL = LEVELS.find(
+    (l) => (l.divisionQuotient?.min ?? 0) >= 10
 )!.level;
 
 const SAMPLES = 400;
@@ -58,15 +72,47 @@ describe("generateLeveledQuestion — curriculum invariants", () => {
         }
     });
 
-    test("division (top level) is always exact integer division", () => {
+    test("division is always exact integer division", () => {
+        for (const level of DIVISION_LEVELS) {
+            let sawDivision = false;
+            for (let i = 0; i < SAMPLES * 3; i++) {
+                const q = generateLeveledQuestion(level);
+                if (q.operator.label !== "division") continue;
+                sawDivision = true;
+                expect(q.input2).not.toBe(0);
+                expect(q.input1 % q.input2).toBe(0);
+                expect(q.answer).toBe(q.input1 / q.input2);
+            }
+            expect(sawDivision).toBe(true);
+        }
+    });
+
+    test("simple division stays single-digit and uses a range hint", () => {
         let sawDivision = false;
         for (let i = 0; i < SAMPLES * 3; i++) {
-            const q = generateLeveledQuestion(DIVISION_LEVEL);
+            const q = generateLeveledQuestion(SIMPLE_DIVISION_LEVEL);
             if (q.operator.label !== "division") continue;
             sawDivision = true;
-            expect(q.input2).not.toBe(0);
-            expect(q.input1 % q.input2).toBe(0);
-            expect(q.answer).toBe(q.input1 / q.input2);
+            expect(q.answer).toBeLessThanOrEqual(9);
+            // No round-tens part, so no number bond — falls back to range hint.
+            expect(buildNumberBond(q.input1, q.input2)).toBeNull();
+            expect(q.hint).toMatch(/^A number between/);
+        }
+        expect(sawDivision).toBe(true);
+    });
+
+    test("bond division has two-digit quotients with a usable number bond", () => {
+        let sawDivision = false;
+        for (let i = 0; i < SAMPLES * 3; i++) {
+            const q = generateLeveledQuestion(BOND_DIVISION_LEVEL);
+            if (q.operator.label !== "division") continue;
+            sawDivision = true;
+            // Two-digit quotient is what makes a number bond meaningful.
+            expect(q.answer).toBeGreaterThanOrEqual(10);
+            // Every division here should split into a friendly bond (no range
+            // hint fallback).
+            expect(buildNumberBond(q.input1, q.input2)).not.toBeNull();
+            expect(q.hint).not.toMatch(/^A number between/);
         }
         expect(sawDivision).toBe(true);
     });
